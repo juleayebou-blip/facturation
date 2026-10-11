@@ -90,3 +90,12 @@ p.help{color:var(--mut);font-size:13px;margin:6px 0}
 .chk{display:flex;gap:8px;align-items:center;margin-bottom:8px;font-size:14px;color:var(--txt);font-weight:500}.chk input{width:auto;margin:0}
 .cin{width:110px;flex:0 0 110px;margin:0;text-align:right}
 .mg{color:var(--mut)}
+
+#lock{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+#lock[hidden]{display:none}
+.lockin{width:100%;max-width:340px;text-align:center}
+.lockin img{margin-bottom:10px}
+.pwbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;text-align:center}
+.pwbox h2{margin:0 0 12px;font-size:17px}
+.pwbox input{width:100%;font-size:16px;padding:11px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+.pwerr{color:var(--bad);min-height:1.2em;margin:0 0 8px;font-size:14px}

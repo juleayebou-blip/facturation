@@ -39,6 +39,7 @@
     clear: (s) => DB.run(s, 'readwrite', (o) => o.clear()),
     putMany: (s, arr) => DB.run(s, 'readwrite', (o) => { arr.forEach((v) => o.put(v)); }),
     kvGet: (k) => DB.run('kv', 'readonly', (o) => o.get(k)),
+    kvDel: (k) => DB.run('kv', 'readwrite', (o) => o.delete(k)),
     kvSet: (k, v) => DB.run('kv', 'readwrite', (o) => o.put(v, k)),
   };
 
@@ -626,17 +627,72 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
     $('#c-list').onclick = (e) => { const it = e.target.closest('.item'); if (it) editClient(S.clients.find((c) => c.id === it.dataset.id)); };
   }
 
+
+  /* ---------------- Mot de passe (verrouillage) ---------------- */
+  const hex = (u8) => Array.from(u8).map((b) => b.toString(16).padStart(2, '0')).join('');
+  const unhex = (h) => new Uint8Array((h.match(/../g) || []).map((x) => parseInt(x, 16)));
+  async function pwHash(pw, saltHex) {
+    const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+    return hex(new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: unhex(saltHex), iterations: 100000, hash: 'SHA-256' }, k, 256)));
+  }
+  async function makeLock(pw) {
+    const salt = hex(crypto.getRandomValues(new Uint8Array(16)));
+    return { salt, hash: await pwHash(pw, salt) };
+  }
+  const checkPw = async (lk, pw) => (await pwHash(pw, lk.salt)) === lk.hash;
+  const standalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+
+  // Formulaire de saisie du mot de passe ; appelle onOk() si correct.
+  function pwForm(host, title, onOk) {
+    host.innerHTML = `<form class="pwbox" autocomplete="off"><h2>${esc(title)}</h2>
+      <input type="password" id="pw-in" placeholder="Mot de passe" autocomplete="current-password" autofocus>
+      <p class="pwerr" id="pw-err"></p><button class="btn primary" type="submit">Ouvrir</button></form>`;
+    const f = host.querySelector('form'), inp = host.querySelector('#pw-in'), err = host.querySelector('#pw-err');
+    let fails = 0;
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      if (await checkPw(S.lock, inp.value)) { onOk(); return; }
+      fails++; inp.value = ''; err.textContent = 'Mot de passe incorrect.';
+      f.querySelector('button').disabled = true;
+      setTimeout(() => { f.querySelector('button').disabled = false; inp.focus(); }, Math.min(1000 * fails, 8000));
+    };
+    setTimeout(() => inp.focus(), 50);
+  }
+  function showLock() {
+    return new Promise((resolve) => {
+      let el = document.getElementById('lock');
+      if (!el) { el = document.createElement('div'); el.id = 'lock'; document.body.appendChild(el); }
+      el.hidden = false;
+      el.innerHTML = '<div class="lockin"><img src="logo.png" alt="" width="64" height="64"><div id="lock-f"></div></div>';
+      pwForm(el.querySelector('#lock-f'), 'Application verrouillée', () => { el.hidden = true; el.innerHTML = ''; resolve(); });
+    });
+  }
+
   /* ---------------- Écran : Réglages ---------------- */
   let installEvt = null;
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; if (location.hash === '#/reglages') viewReglages(); });
 
   function viewReglages() {
+    if (S.lock && !S.regOk) {
+      $('#view').innerHTML = '<section class="card" id="gate"></section>';
+      pwForm($('#gate'), 'Réglages protégés', () => { S.regOk = true; viewReglages(); });
+      return;
+    }
     $('#view').innerHTML = `
     <section class="card"><h2>En-tête des documents</h2><label>Texte affiché à côté du logo (une ligne par retour)<textarea id="s-head" rows="5">${esc(S.settings.header)}</textarea></label><p class="help">Modifié automatiquement à la saisie.</p></section>
     <section class="card"><h2>Sauvegarde</h2><p class="help">Vos données sont enregistrées <b>sur cet appareil uniquement</b>. Faites une sauvegarde régulièrement et pour passer d'un appareil à l'autre (téléphone ↔ PC).</p>
       <div class="actions"><button class="btn primary" id="s-exp">Exporter une sauvegarde</button><button class="btn" id="s-imp">Importer une sauvegarde</button></div><input type="file" id="s-file" accept=".json,application/json" hidden></section>
-    <section class="card"><h2>Installer l'application</h2>${installEvt ? '<button class="btn primary" id="s-inst">Installer sur cet appareil</button>' : ''}
-      <p class="help"><b>Android (Chrome)</b> : menu ⋮ → « Installer l'application ».<br><b>iPhone / iPad (Safari)</b> : bouton Partager → « Sur l'écran d'accueil ».<br><b>PC (Chrome / Edge)</b> : icône d'installation à droite de la barre d'adresse.</p></section>
+    <section class="card"><h2>Mot de passe</h2>${S.lock
+      ? `<p class="help">Un mot de passe est demandé à l'ouverture de l'application et pour accéder aux Réglages.</p>
+         <label>Nouveau mot de passe<input type="password" id="k-new" autocomplete="new-password"></label>
+         <div class="actions"><button class="btn" id="k-chg">Changer le mot de passe</button><button class="btn" id="k-now">Verrouiller maintenant</button><button class="btn" id="k-off">Supprimer le mot de passe</button></div>`
+      : `<p class="help">Protégez l'ouverture de l'application et les Réglages (sauvegarde, restauration, installation). Notez bien le mot de passe : il ne peut pas être récupéré.</p>
+         <label>Mot de passe (4 caractères minimum)<input type="password" id="k-new" autocomplete="new-password"></label>
+         <label>Confirmer<input type="password" id="k-new2" autocomplete="new-password"></label>
+         <div class="actions"><button class="btn primary" id="k-on">Activer le mot de passe</button></div>`}
+      <p class="help" id="k-msg"></p></section>
+    ${standalone() ? '' : `<section class="card"><h2>Installer l'application</h2>${installEvt ? '<button class="btn primary" id="s-inst">Installer sur cet appareil</button>' : ''}
+      <p class="help"><b>Android (Chrome)</b> : menu ⋮ → « Installer l'application ».<br><b>iPhone / iPad (Safari)</b> : bouton Partager → « Sur l'écran d'accueil ».<br><b>PC (Chrome / Edge)</b> : icône d'installation à droite de la barre d'adresse.</p></section>`}
     <p class="help" style="text-align:center">Facturation · version 1.0</p>`;
     $('#s-head').oninput = debounce((e) => { S.settings.header = e.target.value; DB.kvSet('settings', S.settings); }, 400);
     $('#s-exp').onclick = () => {
@@ -661,7 +717,16 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
         location.reload();
       } catch (err) { toast("Fichier de sauvegarde non valide."); }
     };
-    if (installEvt) $('#s-inst').onclick = async () => { installEvt.prompt(); await installEvt.userChoice; installEvt = null; viewReglages(); };
+    const kmsg = (t) => { $('#k-msg').textContent = t; };
+    const kval = (a, b) => (a.length < 4 ? 'Au moins 4 caractères.' : (b != null && a !== b) ? 'Les deux mots de passe ne correspondent pas.' : '');
+    if (S.lock) {
+      $('#k-chg').onclick = async () => { const p = $('#k-new').value, e = kval(p); if (e) return kmsg(e); S.lock = await makeLock(p); await DB.kvSet('lock', S.lock); $('#k-new').value = ''; kmsg('Mot de passe modifié.'); };
+      $('#k-now').onclick = async () => { S.regOk = false; location.hash = '#/facture'; await showLock(); };
+      $('#k-off').onclick = async () => { if (!(await askConfirm('Supprimer le mot de passe ? L\'application s\'ouvrira sans protection.', 'Supprimer'))) return; await DB.kvDel('lock'); S.lock = null; viewReglages(); };
+    } else {
+      $('#k-on').onclick = async () => { const p = $('#k-new').value, e = kval(p, $('#k-new2').value); if (e) return kmsg(e); S.lock = await makeLock(p); await DB.kvSet('lock', S.lock); S.regOk = true; viewReglages(); toast('Mot de passe activé.'); };
+    }
+    if (installEvt && $('#s-inst')) $('#s-inst').onclick = async () => { installEvt.prompt(); await installEvt.userChoice; installEvt = null; viewReglages(); };
   }
 
   /* ---------------- Navigation ---------------- */
@@ -671,6 +736,7 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
     const r = (location.hash.replace('#/', '') || 'facture');
     const route = ROUTES[r] ? r : 'facture';
     closeModal();
+    if (route !== 'reglages') S.regOk = false;
     $$('#nav a').forEach((a) => a.classList.toggle('active', a.dataset.r === route));
     $('#title').textContent = TITLES[route];
     ROUTES[route]();
@@ -679,6 +745,8 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
 
   async function boot() {
     await DB.open();
+    S.lock = (await DB.kvGet('lock')) || null;
+    if (S.lock) await showLock();
     S.products = await DB.all('products');
     S.clients = await DB.all('clients');
     S.invoices = await DB.all('invoices');

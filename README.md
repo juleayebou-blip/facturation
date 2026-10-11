@@ -34,6 +34,10 @@ Les factures, produits et clients sont enregistrés **sur l'appareil** (dans le 
 - **Gain** : dans la facture, chaque ligne affiche son gain (prix de vente − prix d'achat) et le total ; *Archives* donne ventes, gain et reste à encaisser par mois. Les prix d'achat et gains ne figurent **jamais** sur les documents imprimés.
 - **Imprimer / PDF** : dans l'aperçu, *Imprimer / PDF*, puis choisissez « Enregistrer au format PDF » pour envoyer le document.
 
+## Mot de passe
+
+*Réglages → Mot de passe* : active un mot de passe demandé à l'ouverture de l'application et à l'entrée dans les Réglages. Il ne peut pas être récupéré s'il est oublié. Il protège l'accès à l'application, mais ne chiffre pas les données du navigateur.
+
 ## Mettre à jour
 
 Remplacez les fichiers dans le dépôt. Pour forcer le renouvellement chez les utilisateurs, changez `VERSION` dans `sw.js`. Le changement de la liste de produits d'origine (`seed.js`) ne s'applique qu'à une installation neuve : sur un appareil déjà utilisé, modifiez les produits dans l'application.

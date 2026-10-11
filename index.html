@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>GMC Facturation</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1F4E79">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="GMC Factures">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <img src="logo.png" alt="" width="34" height="34">
+  <h1 id="title">Facturation</h1>
+</header>
+<nav id="nav">
+  <a href="#/facture" data-r="facture"><i>🧾</i><span>Facture</span></a>
+  <a href="#/factures" data-r="factures"><i>🗂️</i><span>Archives</span></a>
+  <a href="#/detail" data-r="detail"><i>💊</i><span>Détail prix</span></a>
+  <a href="#/produits" data-r="produits"><i>📦</i><span>Produits</span></a>
+  <a href="#/clients" data-r="clients"><i>👥</i><span>Clients</span></a>
+  <a href="#/reglages" data-r="reglages"><i>⚙️</i><span>Réglages</span></a>
+</nav>
+<main id="view"></main>
+<datalist id="products-dl"></datalist>
+<datalist id="clients-dl"></datalist>
+<div id="toast" role="status"></div>
+<div id="modal" hidden></div>
+<script src="lib.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -9,7 +9,7 @@ Application web installable (PWA) pour créer des **factures** et des **proforma
 3. Dans le dépôt : **Settings → Pages**. Sous *Build and deployment*, choisissez **Deploy from a branch**, branche **main**, dossier **/ (root)**, puis **Save**.
 4. Après une à deux minutes, l'adresse apparaît en haut de la page : `https://VOTRE-NOM.github.io/facturation/`.
 
-> Un dépôt public est visible de tous : le fichier `data/seed.json` contient votre liste de produits et vos prix. Si ces prix sont confidentiels, utilisez un dépôt privé (GitHub Pages sur dépôt privé demande un abonnement payant) ou un autre hébergement privé.
+> Un dépôt public est visible de tous : le fichier `seed.js` contient votre liste de produits et vos prix. Si ces prix sont confidentiels, utilisez un dépôt privé (GitHub Pages sur dépôt privé demande un abonnement payant) ou un autre hébergement privé.
 
 ## Installer sur l'appareil
 
@@ -36,8 +36,8 @@ Les factures, produits et clients sont enregistrés **sur l'appareil** (dans le 
 
 ## Mettre à jour
 
-Remplacez les fichiers dans le dépôt. Pour forcer le renouvellement chez les utilisateurs, changez `VERSION` dans `sw.js`. Le changement de la liste de produits d'origine (`data/seed.json`) ne s'applique qu'à une installation neuve : sur un appareil déjà utilisé, modifiez les produits dans l'application.
+Remplacez les fichiers dans le dépôt. Pour forcer le renouvellement chez les utilisateurs, changez `VERSION` dans `sw.js`. Le changement de la liste de produits d'origine (`seed.js`) ne s'applique qu'à une installation neuve : sur un appareil déjà utilisé, modifiez les produits dans l'application.
 
 ## Contenu
 
-`index.html`, `styles.css`, `app.js`, `lib.js` (calculs, montant en lettres, numérotation), `sw.js` (mode hors ligne), `manifest.webmanifest`, `data/seed.json`, `logo.png`, `icons/`.
+`index.html`, `styles.css`, `app.js`, `lib.js` (calculs, montant en lettres, numérotation), `sw.js` (mode hors ligne), `manifest.webmanifest`, `seed.js`, `logo.png`, `icon-*.png`.

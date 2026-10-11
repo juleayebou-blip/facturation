@@ -63,7 +63,7 @@
   }
 
   async function seed() {
-    const d = window.__SEED || await (await fetch('data/seed.json')).json();
+    const d = window.__SEED || await (await fetch('seed.json')).json();
     S.products = d.products.map((p, i) => ({ id: 'p' + (i + 1), name: p.name, unit: p.unit || '', price: p.price || 0, fprice: p.fprice || null, cost: p.cost || null }));
     S.clients = d.clients.map((c, i) => ({ id: 'c' + (i + 1), name: c.name, phone: c.phone || '', address: c.address || '' }));
     S.settings = { header: DEFAULT_HEADER, nextSeq: 1 };
@@ -687,7 +687,7 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
     else if (LEGACY_HEADERS.some((h) => h.replace(/\s+/g, ' ').trim() === String(S.settings.header).replace(/\s+/g, ' ').trim())) { S.settings.header = DEFAULT_HEADER; await DB.kvSet('settings', S.settings); }
     else if (/DAVIE/i.test(S.settings.header || '')) {
       // ancien en-tête par défaut : remplacé par le nouveau (nom GMC SARL, adresse Lomé - Adetikopé)
-      const d = window.__SEED || await (await fetch('data/seed.json')).json();
+      const d = window.__SEED || await (await fetch('seed.json')).json();
       S.settings.header = d.header;
       await DB.kvSet('settings', S.settings);
     }

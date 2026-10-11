@@ -34,6 +34,10 @@ Les factures, produits et clients sont enregistrés **sur l'appareil** (dans le 
 - **Gain** : dans la facture, chaque ligne affiche son gain (prix de vente − prix d'achat) et le total ; *Archives* donne ventes, gain et reste à encaisser par mois. Les prix d'achat et gains ne figurent **jamais** sur les documents imprimés.
 - **Imprimer / PDF** : dans l'aperçu, *Imprimer / PDF*, puis choisissez « Enregistrer au format PDF » pour envoyer le document.
 
+## PDF et dossiers
+
+Dans l'aperçu d'une facture, d'une proforma ou du détail des prix, **Enregistrer en PDF** crée le fichier sans aucune mention d'adresse web, nommé `Facture_Client_N°.pdf`, `Proforma_Client_N°.pdf` ou `Prix_Client_N°.pdf`. Au premier enregistrement, l'application demande le dossier (par exemple `D:\GMC FAC\Facture` et `D:\GMC FAC\Prix`) puis l'utilise ensuite automatiquement ; ce choix se change dans *Réglages → Dossiers des PDF*. Chrome ou Edge sur PC sont nécessaires ; sinon le PDF est téléchargé.
+
 ## Mot de passe
 
 *Réglages → Mot de passe* : active un mot de passe demandé à l'ouverture de l'application et à l'entrée dans les Réglages. Il ne peut pas être récupéré s'il est oublié. Il protège l'accès à l'application, mais ne chiffre pas les données du navigateur.
@@ -44,4 +48,4 @@ Remplacez les fichiers dans le dépôt. Pour forcer le renouvellement chez les u
 
 ## Contenu
 
-`index.html`, `styles.css`, `app.js`, `lib.js` (calculs, montant en lettres, numérotation), `sw.js` (mode hors ligne), `manifest.webmanifest`, `seed.js`, `logo.png`, `icon-*.png`.
+`index.html`, `styles.css`, `app.js`, `pdfgen.js` et `pdf-lib.min.js` (création des PDF), `lib.js` (calculs, montant en lettres, numérotation), `sw.js` (mode hors ligne), `manifest.webmanifest`, `seed.js`, `logo.png`, `icon-*.png`.

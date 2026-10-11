@@ -115,7 +115,7 @@
   }
 
   /* ---------------- Documents imprimables ---------------- */
-  const BASE_CSS = `*{box-sizing:border-box}body{margin:0;font-family:"Times New Roman",Times,serif;font-size:12pt;color:#000}
+  const BASE_CSS = `*{box-sizing:border-box}body{margin:0;padding:12mm 14mm;font-family:"Times New Roman",Times,serif;font-size:12pt;color:#000}
 .hd{display:flex;align-items:center;gap:10px;min-height:20mm}.hd img{width:20mm;height:20mm;object-fit:contain}.hd div{flex:1;text-align:center;line-height:1.3}
 hr{border:0;border-top:1px dashed #000;margin:5px 0 7px}
 h1{text-align:center;font-size:16pt;margin:3px 0 6px}
@@ -143,7 +143,7 @@ tr{page-break-inside:avoid}`;
     const isPro = inv.type === 'FACTURE PROFORMA';
     const letters = total ? `Arrêtée la présente facture${isPro ? ' proforma' : ''} à la somme de : ${words(total)} Francs CFA` : '';
     return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(inv.type)} ${esc(inv.id || '')}</title>
-<style>@page{size:A4 portrait;margin:12mm 14mm}${BASE_CSS}
+<style>@page{size:A4 portrait;margin:0}${BASE_CSS}
 .info{display:flex;justify-content:space-between;align-items:flex-start;margin:4px 0 8px}
 .info table{width:auto}.m1 td{width:52mm;font-size:12pt}.m1 td.g{width:30mm;font-size:11pt}.cl{width:75mm}.cl td{text-align:center}
 .cl .t{border-bottom:1px solid #000}.cl .v{height:13mm;font-size:12pt}
@@ -171,7 +171,7 @@ ${headerHtml()}<h1>${esc(inv.type)}</h1>
         : '<tr><td class="c">&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>';
     }
     return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Prix unitaire des médicaments</title>
-<style>@page{size:A4 landscape;margin:10mm 14mm}${BASE_CSS}
+<style>@page{size:A4 landscape;margin:0}${BASE_CSS}
 td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-between;margin:2mm 0 3mm;font-weight:bold}
 .tot{display:flex;justify-content:flex-end;margin-top:0}.tot div{border:1px solid #000;border-top:0;padding:0 6mm;height:9mm;line-height:9mm;font-weight:bold;font-size:14pt}
 .tot .l{flex:1;border-right:0}.tot .v{width:50mm;text-align:center}.tot{page-break-inside:avoid}</style></head><body>
@@ -197,11 +197,11 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
     f.srcdoc = html;
   }
 
-  function showDoc(html, landscape) {
+  function showDoc(html, landscape, pdf) {
     const W = landscape ? 1123 : 794, H = landscape ? 794 : 1123;
     const m = $('#modal');
     m.hidden = false;
-    m.innerHTML = '<div class="mbox wide"><div class="mbar"><button class="btn primary" id="m-print">Imprimer / PDF</button><button class="btn" id="m-close">Fermer</button></div><div class="mview"><div class="mwrap"><iframe></iframe></div></div></div>';
+    m.innerHTML = `<div class="mbox wide"><div class="mbar">${pdf && window.PDFLib ? '<button class="btn primary" id="m-pdf">Enregistrer en PDF</button>' : ''}<button class="btn${pdf && window.PDFLib ? '' : ' primary'}" id="m-print">Imprimer</button><button class="btn" id="m-close">Fermer</button></div><div class="mview"><div class="mwrap"><iframe></iframe></div></div></div>`;
     const wrap = $('.mwrap', m), fr = $('iframe', m), view = $('.mview', m);
     fr.style.width = W + 'px';
     fr.style.height = H + 'px';
@@ -215,7 +215,79 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
     fit();
     setTimeout(fit, 80);
     $('#m-print').onclick = () => printHtml(html);
+    if (pdf && window.PDFLib) $('#m-pdf').onclick = () => savePdf(pdf.kind, pdf.name, pdf.make);
     $('#m-close').onclick = closeModal;
+  }
+
+
+  /* ---------------- Enregistrement des PDF dans les dossiers ---------------- */
+  const FS_OK = 'showDirectoryPicker' in window;
+  const DIRNAME = { fac: 'D:\\GMC FAC\\Facture', prix: 'D:\\GMC FAC\\Prix' };
+  const slug = (x) => String(x || '').replace(/[\\/:*?"<>|]+/g, ' ').trim().replace(/\s+/g, '_');
+  const fileName = (label, client, id) => `${label}_${slug(client) || 'Client'}_${slug(String(id || '').replace(/\//g, '-'))}.pdf`;
+  const getDirs = async () => (await DB.kvGet('dirs')) || {};
+  async function pickDir(kind) {
+    const h = await window.showDirectoryPicker({ id: 'gmc-' + kind, mode: 'readwrite' });
+    const dirs = await getDirs();
+    dirs[kind] = h;
+    await DB.kvSet('dirs', dirs);
+    return h;
+  }
+  function downloadBytes(bytes, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  async function savePdf(kind, name, make) {
+    let h = null;
+    try {
+      h = (await getDirs())[kind] || null;
+      if (FS_OK && !h) {
+        if (!(await askConfirm(`Choisissez maintenant le dossier ${DIRNAME[kind]}. Cette question n'est posée qu'une fois.`, 'Choisir le dossier'))) return;
+        h = await pickDir(kind);
+      }
+      if (h && (await h.queryPermission({ mode: 'readwrite' })) !== 'granted' && (await h.requestPermission({ mode: 'readwrite' })) !== 'granted') h = null;
+    } catch (e) { if (e && e.name === 'AbortError') return; h = null; }
+    try {
+      const bytes = await make();
+      if (h) {
+        const w = await (await h.getFileHandle(name, { create: true })).createWritable();
+        await w.write(bytes); await w.close();
+        toast(`Enregistré dans « ${h.name} » : ${name}`);
+      } else { downloadBytes(bytes, name); toast(`PDF téléchargé : ${name}`); }
+    } catch (e) {
+      try { downloadBytes(await make(), name); toast(`Dossier inaccessible : PDF téléchargé (${name}).`); } catch (e2) { toast('Impossible de créer le PDF.'); }
+    }
+  }
+  let logoBytes = null;
+  async function getLogo() { if (!logoBytes) logoBytes = new Uint8Array(await (await fetch('logo.png')).arrayBuffer()); return logoBytes; }
+  function invoicePdfOpts(inv) {
+    const isPro = inv.type === 'FACTURE PROFORMA';
+    return {
+      kind: 'fac', name: fileName(isPro ? 'Proforma' : 'Facture', inv.client, inv.id),
+      make: async () => {
+        const total = inv.lines.reduce((t, l) => t + l.qty * l.price, 0);
+        return PdfGen.invoice({
+          header: S.settings.header, type: inv.type, id: inv.id || '', date: frDate(inv.date), client: inv.client,
+          lines: inv.lines.map((l) => ({ name: l.name, qty: qtyTxt(l.qty), price: l.price ? money(l.price) : '', amount: l.price ? money(l.qty * l.price) : '' })),
+          total: money(total), letters: total ? `Arrêtée la présente facture${isPro ? ' proforma' : ''} à la somme de : ${words(total)} Francs CFA` : ''
+        }, await getLogo());
+      }
+    };
+  }
+  function detailPdfOpts(d) {
+    return {
+      kind: 'prix', name: fileName('Prix', d.client, d.src && d.src !== 'draft' ? d.src : d.date),
+      make: async () => {
+        const rows = d.rows.filter((r) => r.name.trim());
+        return PdfGen.detail({
+          header: S.settings.header, client: d.client, date: frDate(d.date),
+          rows: rows.map((r) => ({ name: r.name, unit: r.unit, qty: qtyTxt(num(r.qty)), price: num(r.price) ? money(num(r.price)) : '', amount: num(r.price) ? money(num(r.qty) * num(r.price)) : '' })),
+          total: money(rows.reduce((t, r) => t + num(r.qty) * num(r.price), 0))
+        }, await getLogo());
+      }
+    };
   }
 
   /* ---------------- Numérotation ---------------- */
@@ -305,7 +377,7 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
     </div>${d.editingId ? '<p class="note">Vous modifiez une facture enregistrée : son n° est conservé.</p>' : ''}</section>
     <section class="card"><div id="lines"></div><button class="btn ghost" id="f-add" style="margin-top:10px">+ Ajouter une ligne</button></section>
     <section class="card total"><div><span>Montant total</span><strong id="f-total"></strong></div><p id="f-words"></p><p id="f-gain" class="gainp"></p></section>
-    <div class="actions"><button class="btn" id="f-preview">Aperçu / Imprimer</button><button class="btn primary" id="f-save">Enregistrer</button><button class="btn" id="f-reset">Vider</button></div>`;
+    <div class="actions"><button class="btn" id="f-preview">Aperçu / PDF</button><button class="btn primary" id="f-save">Enregistrer</button><button class="btn" id="f-reset">Vider</button></div>`;
     renderLines();
 
     $('#f-type').onchange = (e) => { d.type = e.target.value; updateTotals(); saveDraft(); };
@@ -340,7 +412,8 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
     $('#f-preview').onclick = () => {
       const lns = cleanLines(d);
       if (!lns.length) return toast('Ajoutez au moins une ligne avec un produit et une quantité.');
-      showDoc(invoiceHtml({ id: d.editingId || previewNumber(d.date), type: d.type, date: d.date, client: d.client, lines: lns }), false);
+      const pv = { id: d.editingId || previewNumber(d.date), type: d.type, date: d.date, client: d.client, lines: lns };
+      showDoc(invoiceHtml(pv), false, invoicePdfOpts(pv));
     };
     $('#f-save').onclick = saveInvoice;
     $('#f-reset').onclick = async () => {
@@ -438,7 +511,7 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
       const inv = S.invoices.find((i) => i.id === b.closest('.item').dataset.id);
       if (!inv) return;
       const a = b.dataset.a;
-      if (a === 'view') return showDoc(invoiceHtml(inv), false);
+      if (a === 'view') return showDoc(invoiceHtml(inv), false, invoicePdfOpts(inv));
       if (a === 'detail') { S.ui.detail = { src: inv.id }; location.hash = '#/detail'; return; }
       if (a === 'del') {
         if (!(await askConfirm(`Supprimer définitivement le n° ${inv.id} ?`, 'Supprimer'))) return;
@@ -496,7 +569,7 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
       <section class="card"><div class="grid2"><label>Client<input id="d-client" value="${esc(D.client)}"></label><label>Date<input type="date" id="d-date" value="${esc(D.date)}"></label></div></section>
       <section class="card"><div id="d-rows"></div></section>
       <section class="card total"><div><span>Montant total</span><strong id="d-total"></strong></div></section>
-      <div class="actions"><button class="btn primary" id="d-preview">Aperçu / Imprimer</button></div>`;
+      <div class="actions"><button class="btn primary" id="d-preview">Aperçu / PDF</button></div>`;
     $('#d-src').value = D.src;
     const drawRows = () => {
       $('#d-rows').innerHTML = D.rows.length ? D.rows.map((r, i) => `<div class="line" data-i="${i}"><div class="ln">${i + 1}</div><div class="lf">
@@ -527,7 +600,7 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
     });
     $('#d-preview').onclick = () => {
       if (!D.rows.length) return toast("Aucune ligne à afficher.");
-      showDoc(detailHtml(D), true);
+      showDoc(detailHtml(D), true, detailPdfOpts(D));
     };
   }
 
@@ -682,6 +755,12 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
     <section class="card"><h2>En-tête des documents</h2><label>Texte affiché à côté du logo (une ligne par retour)<textarea id="s-head" rows="5">${esc(S.settings.header)}</textarea></label><p class="help">Modifié automatiquement à la saisie.</p></section>
     <section class="card"><h2>Sauvegarde</h2><p class="help">Vos données sont enregistrées <b>sur cet appareil uniquement</b>. Faites une sauvegarde régulièrement et pour passer d'un appareil à l'autre (téléphone ↔ PC).</p>
       <div class="actions"><button class="btn primary" id="s-exp">Exporter une sauvegarde</button><button class="btn" id="s-imp">Importer une sauvegarde</button></div><input type="file" id="s-file" accept=".json,application/json" hidden></section>
+    <section class="card"><h2>Dossiers des PDF</h2>${FS_OK
+      ? `<p class="help">Les PDF sont enregistrés automatiquement sous le nom <b>Facture_Client_N°</b>, <b>Proforma_Client_N°</b> ou <b>Prix_Client_N°</b>.</p>
+         <label>Factures et proformas<input id="dir-fac" readonly placeholder="Non choisi"></label><div class="actions"><button class="btn" id="dir-fac-b">Choisir le dossier…</button></div>
+         <label>Détail des prix<input id="dir-prix" readonly placeholder="Non choisi"></label><div class="actions"><button class="btn" id="dir-prix-b">Choisir le dossier…</button></div>
+         <p class="help">Choisissez par exemple ${esc(DIRNAME.fac)} et ${esc(DIRNAME.prix)}.</p>`
+      : '<p class="help">Ce navigateur ne permet pas de choisir un dossier : les PDF seront placés dans le dossier Téléchargements.</p>'}</section>
     <section class="card"><h2>Mot de passe</h2>${S.lock
       ? `<p class="help">Un mot de passe est demandé à l'ouverture de l'application et pour accéder aux Réglages.</p>
          <label>Nouveau mot de passe<input type="password" id="k-new" autocomplete="new-password"></label>
@@ -717,6 +796,10 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
         location.reload();
       } catch (err) { toast("Fichier de sauvegarde non valide."); }
     };
+    if (FS_OK) {
+      getDirs().then((dirs) => { ['fac', 'prix'].forEach((k) => { if (dirs[k]) $('#dir-' + k).value = dirs[k].name; }); });
+      ['fac', 'prix'].forEach((k) => { $('#dir-' + k + '-b').onclick = async () => { try { const h = await pickDir(k); $('#dir-' + k).value = h.name; toast('Dossier enregistré.'); } catch (e) { /* annulé */ } }; });
+    }
     const kmsg = (t) => { $('#k-msg').textContent = t; };
     const kval = (a, b) => (a.length < 4 ? 'Au moins 4 caractères.' : (b != null && a !== b) ? 'Les deux mots de passe ne correspondent pas.' : '');
     if (S.lock) {

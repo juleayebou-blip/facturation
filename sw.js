@@ -1,9 +1,9 @@
 // Service worker : permet d'utiliser l'application sans connexion.
 // Stratégie : réseau d'abord (pour recevoir les mises à jour), cache en secours hors ligne.
-const VERSION = 'facturation-v6';
+const VERSION = 'facturation-v7';
 const FILES = [
   './', 'index.html', 'styles.css', 'lib.js', 'app.js', 'manifest.webmanifest',
-  'logo.png', 'icon-192.png', 'icon-512.png', 'seed.js'
+  'logo.png', 'icon-192.png', 'icon-512.png', 'seed.js', 'pdf-lib.min.js', 'pdfgen.js'
 ];
 
 self.addEventListener('install', (e) => {

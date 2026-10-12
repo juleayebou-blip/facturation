@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const { words, makeNumber, esc, num, money, norm, today, frDate, qtyTxt } = window.Lib;
+  const { words, nextNumber, esc, num, money, norm, today, frDate, qtyTxt } = window.Lib;
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const DEFAULT_HEADER = "GMC SARL (General Medico Consumable)\nCommerce général : Import-export - Représentation commerciale - Prestation de services & Distribution des consommables médicaux\nCel : 92 51 57 36 - 99 93 79 89 / Lomé - Adetikopé";
@@ -291,11 +291,7 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
   }
 
   /* ---------------- Numérotation ---------------- */
-  function freshNumber(dateISO) {
-    let seq = S.settings.nextSeq || 1, n;
-    do { n = makeNumber(seq, dateISO); seq++; } while (S.invoices.some((i) => i.id === n));
-    return { n, seq };
-  }
+  const freshNumber = (dateISO) => ({ n: nextNumber(S.invoices.map((i) => i.id), dateISO, S.settings.numMode === 'strict' ? 'strict' : 'spaced') });
   const previewNumber = (dateISO) => freshNumber(dateISO).n;
 
   /* ---------------- Écran : Facture (saisie) ---------------- */
@@ -437,8 +433,6 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
     else {
       const f = freshNumber(d.date);
       id = f.n;
-      S.settings.nextSeq = f.seq;
-      await DB.kvSet('settings', S.settings);
     }
     const inv = {
       id, type: d.type, date: d.date, client: d.client.trim(), lines,
@@ -761,6 +755,9 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
          <label>Détail des prix<input id="dir-prix" readonly placeholder="Non choisi"></label><div class="actions"><button class="btn" id="dir-prix-b">Choisir le dossier…</button></div>
          <p class="help">Choisissez par exemple ${esc(DIRNAME.fac)} et ${esc(DIRNAME.prix)}.</p>`
       : '<p class="help">Ce navigateur ne permet pas de choisir un dossier : les PDF seront placés dans le dossier Téléchargements.</p>'}</section>
+    <section class="card"><h2>Numérotation des factures</h2>
+      <label>Mode<select id="s-num"><option value="spaced"${S.settings.numMode === 'strict' ? '' : ' selected'}>Croissante irrégulière (006, 009, 011…)</option><option value="strict"${S.settings.numMode === 'strict' ? ' selected' : ''}>Strictement continue (001, 002, 003…)</option></select></label>
+      <p class="help">Dans les deux modes, 3 chiffres croissants dans le mois, puis /mois/année. La série repart chaque mois. Le changement s'applique à la prochaine facture.</p></section>
     <section class="card"><h2>Utilisation sans internet</h2><p class="help" id="off-st">Vérification…</p></section>
     <section class="card"><h2>Mot de passe</h2>${S.lock
       ? `<p class="help">Un mot de passe est demandé à l'ouverture de l'application et pour accéder aux Réglages.</p>
@@ -807,6 +804,7 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
       const el = $('#off-st');
       if (el) el.innerHTML = ok ? '✅ <b>Prête :</b> l\'application s\'ouvre sans connexion internet.' : '⚠️ <b>Pas encore prête hors connexion.</b> Ouvrez l\'application une fois avec internet, fermez-la, puis rouvrez-la.';
     })();
+    $('#s-num').onchange = (e) => { S.settings.numMode = e.target.value; DB.kvSet('settings', S.settings); toast('Mode de numérotation enregistré.'); };
     const kmsg = (t) => { $('#k-msg').textContent = t; };
     const kval = (a, b) => (a.length < 4 ? 'Au moins 4 caractères.' : (b != null && a !== b) ? 'Les deux mots de passe ne correspondent pas.' : '');
     if (S.lock) {

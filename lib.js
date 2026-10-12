@@ -36,10 +36,26 @@
     return parts.join(' ');
   }
 
-  // N° de facture : 4 chiffres (suite stable et sans doublon) / mois / 2 derniers chiffres de l'année
-  function makeNumber(seq, dateISO) {
+  // N° de facture : 3 chiffres croissants dans le mois (001, 002, …) / mois / 2 derniers chiffres de l'année.
+  // Le suivant = plus grand numéro déjà utilisé ce mois-là + 1 ; la série repart à 001 chaque mois.
+  function nextNumber(ids, dateISO, mode) {
     const [y, m] = dateISO.split('-');
-    return (1000 + ((seq * 7919) % 9000)) + '/' + m + '/' + y.slice(-2);
+    const suffix = '/' + m + '/' + y.slice(-2);
+    let max = 0;
+    (ids || []).forEach((id) => {
+      const s = String(id || '');
+      if (!s.endsWith(suffix)) return;
+      const head = s.slice(0, -suffix.length);
+      if (/^\d{1,4}$/.test(head)) max = Math.max(max, parseInt(head, 10));
+    });
+    let n = max + 1;
+    if (mode === 'spaced') {
+      // Numéros croissants mais irréguliers : un écart de 1 à 5 (calculé à partir de l'historique, donc identique à l'aperçu et à l'enregistrement)
+      const k = (parseInt(m, 10) * 31 + parseInt(y, 10) * 17 + max * 13) % 97;
+      n = max === 0 ? 6 + (k % 20) : max + 1 + (k % 5);
+      if (n > 999) n = max + 1;
+    }
+    return String(n).padStart(3, '0') + suffix;
   }
 
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
@@ -52,7 +68,7 @@
   const frDate = (iso) => { if (!iso) return ''; const [y, m, d] = iso.split('-'); return d + '/' + m + '/' + y; };
   const qtyTxt = (q) => String(q).replace('.', ',');
 
-  const lib = { words, makeNumber, esc, num, money, norm, today, frDate, qtyTxt };
+  const lib = { words, nextNumber, esc, num, money, norm, today, frDate, qtyTxt };
   if (typeof module !== 'undefined' && module.exports) module.exports = lib;
   else root.Lib = lib;
 })(typeof window !== 'undefined' ? window : globalThis);

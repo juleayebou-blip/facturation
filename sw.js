@@ -1,7 +1,7 @@
 // Service worker : l'application s'ouvre sans connexion.
 // Stratégie : le cache répond d'abord (ouverture instantanée, même sans réseau), puis il est rafraîchi en arrière-plan.
 // Les mises à jour déposées sur GitHub sont donc prises en compte à l'ouverture suivante.
-const VERSION = 'facturation-v8';
+const VERSION = 'facturation-v10';
 const CORE = ['./', 'index.html', 'styles.css', 'lib.js', 'app.js', 'manifest.webmanifest', 'seed.js', 'logo.png'];
 const OPTIONAL = ['icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'pdf-lib.min.js', 'pdfgen.js'];
 

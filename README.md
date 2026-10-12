@@ -27,12 +27,16 @@ Les factures, produits et clients sont enregistrés **sur l'appareil** (dans le 
 
 ## Utilisation
 
-- **Facture** : choisissez le type (facture ou proforma), le client, puis les produits. Le prix de facturation se remplit seul ; modifiez-le si besoin. Le n° (4 chiffres / mois / année sur 2 chiffres) et la date du jour sont automatiques. *Enregistrer* archive le document.
+- **Facture** : choisissez le type (facture ou proforma), le client, puis les produits. Le prix de facturation se remplit seul ; modifiez-le si besoin. Le n° (3 chiffres croissants dans le mois, puis mois, puis année sur 2 chiffres : 001/10/26, 002/10/26…, la série repart à 001 chaque mois) et la date du jour sont automatiques. *Enregistrer* archive le document.
 - **Archives** : recherche, aperçu et impression (PDF), modification, duplication, transformation d'une proforma en facture, suivi des paiements.
 - **Détail prix** : choisissez une facture, les prix de vente unitaires du client s'affichent, corrigez-les si besoin, puis imprimez.
 - **Produits** : trois prix par produit : le prix de vente du client (cabinet), votre prix de facturation et **votre prix d'achat chez le grossiste**. Le bouton *Saisir les prix d'achat* permet de les renseigner rapidement ; la marge s'affiche en direct.
 - **Gain** : dans la facture, chaque ligne affiche son gain (prix de vente − prix d'achat) et le total ; *Archives* donne ventes, gain et reste à encaisser par mois. Les prix d'achat et gains ne figurent **jamais** sur les documents imprimés.
 - **Imprimer / PDF** : dans l'aperçu, *Imprimer / PDF*, puis choisissez « Enregistrer au format PDF » pour envoyer le document.
+
+## Numérotation
+
+*Réglages → Numérotation des factures* : mode « croissante irrégulière » (006, 009, 011…) ou « strictement continue » (001, 002, 003…). Dans les deux cas : 3 chiffres croissants dans le mois, puis /mois/année, et la série repart à chaque mois.
 
 ## Utilisation sans internet
 

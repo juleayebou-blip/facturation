@@ -761,6 +761,7 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
          <label>Détail des prix<input id="dir-prix" readonly placeholder="Non choisi"></label><div class="actions"><button class="btn" id="dir-prix-b">Choisir le dossier…</button></div>
          <p class="help">Choisissez par exemple ${esc(DIRNAME.fac)} et ${esc(DIRNAME.prix)}.</p>`
       : '<p class="help">Ce navigateur ne permet pas de choisir un dossier : les PDF seront placés dans le dossier Téléchargements.</p>'}</section>
+    <section class="card"><h2>Utilisation sans internet</h2><p class="help" id="off-st">Vérification…</p></section>
     <section class="card"><h2>Mot de passe</h2>${S.lock
       ? `<p class="help">Un mot de passe est demandé à l'ouverture de l'application et pour accéder aux Réglages.</p>
          <label>Nouveau mot de passe<input type="password" id="k-new" autocomplete="new-password"></label>
@@ -800,6 +801,12 @@ td,th{height:6.4mm;font-size:11pt}.top{display:flex;justify-content:space-betwee
       getDirs().then((dirs) => { ['fac', 'prix'].forEach((k) => { if (dirs[k]) $('#dir-' + k).value = dirs[k].name; }); });
       ['fac', 'prix'].forEach((k) => { $('#dir-' + k + '-b').onclick = async () => { try { const h = await pickDir(k); $('#dir-' + k).value = h.name; toast('Dossier enregistré.'); } catch (e) { /* annulé */ } }; });
     }
+    (async () => {
+      let ok = false;
+      try { ok = !!(navigator.serviceWorker && navigator.serviceWorker.controller && (await caches.match('index.html')) && (await caches.match('app.js')) && (await caches.match('seed.js'))); } catch (e) { ok = false; }
+      const el = $('#off-st');
+      if (el) el.innerHTML = ok ? '✅ <b>Prête :</b> l\'application s\'ouvre sans connexion internet.' : '⚠️ <b>Pas encore prête hors connexion.</b> Ouvrez l\'application une fois avec internet, fermez-la, puis rouvrez-la.';
+    })();
     const kmsg = (t) => { $('#k-msg').textContent = t; };
     const kval = (a, b) => (a.length < 4 ? 'Au moins 4 caractères.' : (b != null && a !== b) ? 'Les deux mots de passe ne correspondent pas.' : '');
     if (S.lock) {

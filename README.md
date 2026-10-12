@@ -34,6 +34,10 @@ Les factures, produits et clients sont enregistrés **sur l'appareil** (dans le 
 - **Gain** : dans la facture, chaque ligne affiche son gain (prix de vente − prix d'achat) et le total ; *Archives* donne ventes, gain et reste à encaisser par mois. Les prix d'achat et gains ne figurent **jamais** sur les documents imprimés.
 - **Imprimer / PDF** : dans l'aperçu, *Imprimer / PDF*, puis choisissez « Enregistrer au format PDF » pour envoyer le document.
 
+## Utilisation sans internet
+
+L'application garde ses fichiers en mémoire dans le navigateur : une fois ouverte avec internet, elle s'ouvre ensuite sans connexion. *Réglages → Utilisation sans internet* indique si elle est prête. Les mises à jour de GitHub sont prises en compte à l'ouverture suivante.
+
 ## PDF et dossiers
 
 Dans l'aperçu d'une facture, d'une proforma ou du détail des prix, **Enregistrer en PDF** crée le fichier sans aucune mention d'adresse web, nommé `Facture_Client_N°.pdf`, `Proforma_Client_N°.pdf` ou `Prix_Client_N°.pdf`. Au premier enregistrement, l'application demande le dossier (par exemple `D:\GMC FAC\Facture` et `D:\GMC FAC\Prix`) puis l'utilise ensuite automatiquement ; ce choix se change dans *Réglages → Dossiers des PDF*. Chrome ou Edge sur PC sont nécessaires ; sinon le PDF est téléchargé.

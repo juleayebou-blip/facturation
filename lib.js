@@ -46,7 +46,7 @@
       const s = String(id || '');
       if (!s.endsWith(suffix)) return;
       const head = s.slice(0, -suffix.length);
-      if (/^\d{1,4}$/.test(head)) max = Math.max(max, parseInt(head, 10));
+      if (/^\d{3}$/.test(head)) max = Math.max(max, parseInt(head, 10));
     });
     let n = max + 1;
     if (mode === 'spaced') {
@@ -55,6 +55,8 @@
       n = max === 0 ? 6 + (k % 20) : max + 1 + (k % 5);
       if (n > 999) n = max + 1;
     }
+    const used = new Set((ids || []).map(String));
+    while (used.has(String(n).padStart(3, '0') + suffix)) n++;
     return String(n).padStart(3, '0') + suffix;
   }
 
